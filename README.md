@@ -407,10 +407,10 @@ git push
 ## How do I delete all of my commits including the very first commit. 
 
 We follow these steps: 
-1. delete the branches
-2. reset back to the first commit
-3. delete the HEAD reference
-4. make a commit of something
+1. Delete the branches
+2. Reset back to the first commit
+3. Delete the HEAD reference
+4. Make a commit of something
 5. Force Push that commit
 
 ```
@@ -422,9 +422,6 @@ git push --delete origin remote_branch
 
 git reset #####
 git push -f
-```
 
-
-```
 git update-ref -d HEAD
 ``` 
