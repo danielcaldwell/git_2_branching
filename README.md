@@ -70,7 +70,170 @@ To git@github.com:danielcaldwell/test_git.git
 Branch feature3 set up to track remote branch feature3 from origin.
 ```
 
-# Squashing Commits and Rebasing
+
+
+# Merging Changes from master into your feature branch
+
+## Use Rebasing to bring commits from master to your feature branch
+
+As changes to the master occur while you are developing, it is good to bring those changes into your branch in order to keey your development up to date with the latest source code. The longer you wait, the more out of date it will be and the more difficult to resolve conflicts it will become. 
+
+First, change to your master branch and pull the latest code. There should be no conflicts as you have only made changes in your feature branches. 
+
+```
+git checkout master
+git pull
+```
+
+For example: 
+```
+$ git checkout master
+Switched to branch 'master'
+Your branch is up-to-date with 'origin/master'.
+
+$ git pull
+Already up-to-date.
+```
+
+Next, change to your feature branch and do a rebase against master. 
+```
+git checkout feature1
+git rebase master
+```
+
+Here we can see the log entries showing the changes: 
+```
+$ git log --graph --oneline --all
+* 329a0a5 master update 9
+* c8f23ea master update 8
+* c488f9e master update 7
+* c141f08 master update 6
+| * 2662fee feature 1 update 7
+| * 95984da feature 1 update 6
+| * a1d6ea0 feature 1 update 5
+| * 22632e1 feature 1 update 4
+| * b96bfae feature 1 update 3
+| * 4cb358c feature 1 update 2
+| * d44e921 feature 1 update 1
+|/  
+* 094b41e master update 5
+* 3958b79 master update 4
+* d8cbd8e master update 3
+* 3f81757 master update 2
+* ff23269 master update 1
+* 922414d initial commit
+```
+
+we want to rebase master to our feature, which will bring updates 6,7,8,9 into feature1
+
+```
+$ git checkout feature1
+Already on 'feature1'
+Your branch is up-to-date with 'origin/feature1'.
+
+$ git rebase master
+First, rewinding head to replay your work on top of it...
+Applying: feature 1 update 1
+Applying: feature 1 update 2
+Applying: feature 1 update 3
+Applying: feature 1 update 4
+Applying: feature 1 update 5
+Applying: feature 1 update 6
+Applying: feature 1 update 7
+Daniels-MacBook-Pro:test_git dcaldwel$
+```
+
+We've pushed our changes beforehand, so we will see a divergent message indicatign that the feature1 branch on the remote origin has diverged from our local branch. 
+We need to do a force push to push the rebase to the remote origin. This is caused because we have rewritten the history of the branch and is the reason why rebasing
+only works well in isolated branches. 
+
+```
+$ git status
+On branch feature1
+Your branch and 'origin/feature1' have diverged,
+and have 11 and 7 different commits each, respectively.
+  (use "git pull" to merge the remote branch into yours)
+nothing to commit, working directory clean
+
+$ git push -f 
+Counting objects: 21, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (19/19), done.
+Writing objects: 100% (21/21), 1.88 KiB | 0 bytes/s, done.
+Total 21 (delta 4), reused 0 (delta 0)
+remote: Resolving deltas: 100% (4/4), done.
+To git@github.com:danielcaldwell/test_git.git
+ + 2662fee...24ad9fe feature1 -> feature1 (forced update)
+```
+
+Now we can check the log to see that the updates from master were applied to our feature branch: 
+
+```
+Daniels-MacBook-Pro:test_git dcaldwel$ git log --graph --oneline --all
+* 24ad9fe feature 1 update 7
+* a7862c2 feature 1 update 6
+* aafb886 feature 1 update 5
+* a1ebe17 feature 1 update 4
+* 7cefa0b feature 1 update 3
+* 6dcf05c feature 1 update 2
+* 252ec7b feature 1 update 1
+* 329a0a5 master update 9
+* c8f23ea master update 8
+* c488f9e master update 7
+* c141f08 master update 6
+* 094b41e master update 5
+* 3958b79 master update 4
+* d8cbd8e master update 3
+* 3f81757 master update 2
+* ff23269 master update 1
+* 922414d initial commit
+```
+
+if we make a change in the master, then look at the log we will see the graph again. 
+
+```
+$ git checkout master
+Switched to branch 'master'
+Your branch is up-to-date with 'origin/master'.
+
+$ echo "(master update 10)" >> master.txt; git add master.txt; git commit -m "master update 10"; git push;
+[master 31aba59] master update 10
+ 1 file changed, 1 insertion(+)
+Counting objects: 3, done.
+Delta compression using up to 8 threads.
+Compressing objects: 100% (2/2), done.
+Writing objects: 100% (3/3), 283 bytes | 0 bytes/s, done.
+Total 3 (delta 1), reused 0 (delta 0)
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To git@github.com:danielcaldwell/test_git.git
+   329a0a5..31aba59  master -> master
+
+$ git log --graph --oneline --all
+* 31aba59 master update 10
+| * 24ad9fe feature 1 update 7
+| * a7862c2 feature 1 update 6
+| * aafb886 feature 1 update 5
+| * a1ebe17 feature 1 update 4
+| * 7cefa0b feature 1 update 3
+| * 6dcf05c feature 1 update 2
+| * 252ec7b feature 1 update 1
+|/  
+* 329a0a5 master update 9
+* c8f23ea master update 8
+* c488f9e master update 7
+* c141f08 master update 6
+* 094b41e master update 5
+* 3958b79 master update 4
+* d8cbd8e master update 3
+* 3f81757 master update 2
+* ff23269 master update 1
+* 922414d initial commit
+```
+
+This is one way to get changes from your master branch into your feature branch. 
+
+
+# Preparing a pull request by Squashing Commits with Rebasing
 
 ## Finding the sha of the first commit we made to our branch
 
@@ -96,16 +259,8 @@ f8fdb3a master update 2
 7b5bada master update 1
 ```
 
-The sha hash of the common ancestor to master is 4a032f... we will use that one to sqash the commits into one. 
-
-
-## Squashing the commits using rebase 
-
-### Find the commit where the branch was created
-
-You can use git log to do this. Let's explore: 
-
-The final command is here. It gets the parents of all the commit entries between master and the feature branch, and then grabs the last one. 
+The sha hash of the common ancestor to master is 4a032f... we will use that one to sqash the commits into one. But what do we do if this is a long list or if the labeles don't help
+us determine what is the right one? We just have to ask *git log* with the proper parameters. This command gets the parents of all the commit entries between master and the feature branch, and then grabs the last one. 
 
 ```
 $ git log --pretty=%P master..feature2 | tail -1
@@ -118,7 +273,7 @@ $ git log --pretty=%P master..feature2 | tail -1
 git rebase -i 4a0321f447d542586c173f0f30939ed474fabb89
 ```
 
-It will open a terminal where you can choose which commits to squash. **Note that the commits are reversed from *git log* **
+It will open a terminal where you can choose which commits to squash. ** Note that the commits are reversed from *git log* **
 
 ```
   1 pick 37271d0 feature 2 update 1
@@ -218,176 +373,6 @@ This is great for individual branches, but not shared ones.
 
 
 
-# Merging Changes from master into your feature branch
-
-## Rebasing from master to your feature branch
-
-As changes to the master occur while you are developing, it is good to bring those
-changes into your branch in order to keey your development up to date with the latest 
-source code. The longer you wait, the more out of date it will be and the more difficult to resolve
-conflicts it will become. 
-
-
-First, change to your master branch and pull the latest code. There should be no conflicts 
-as you have only made changes in your feature branches. 
-
-```
-git checkout master
-git pull
-```
-
-For example: 
-
-```
-$ git checkout master
-Switched to branch 'master'
-Your branch is up-to-date with 'origin/master'.
-
-$ git pull
-Already up-to-date.
-```
-
-
-Next, change to your feature branch and do a rebase against master. 
-
-```
-git checkout feature1
-git rebase master
-```
-
-Here we can see the log entries showing the changes: 
-
-```
-$ git log --graph --oneline --all
-* 329a0a5 master update 9
-* c8f23ea master update 8
-* c488f9e master update 7
-* c141f08 master update 6
-| * 2662fee feature 1 update 7
-| * 95984da feature 1 update 6
-| * a1d6ea0 feature 1 update 5
-| * 22632e1 feature 1 update 4
-| * b96bfae feature 1 update 3
-| * 4cb358c feature 1 update 2
-| * d44e921 feature 1 update 1
-|/  
-* 094b41e master update 5
-* 3958b79 master update 4
-* d8cbd8e master update 3
-* 3f81757 master update 2
-* ff23269 master update 1
-* 922414d initial commit
-```
-
-we want to rebase master to our feature, which will bring updates 6,7,8,9 into feature1
-
-```
-$ git checkout feature1
-Already on 'feature1'
-Your branch is up-to-date with 'origin/feature1'.
-
-$ git rebase master
-First, rewinding head to replay your work on top of it...
-Applying: feature 1 update 1
-Applying: feature 1 update 2
-Applying: feature 1 update 3
-Applying: feature 1 update 4
-Applying: feature 1 update 5
-Applying: feature 1 update 6
-Applying: feature 1 update 7
-Daniels-MacBook-Pro:test_git dcaldwel$
-```
-
-We've pushed our changes beforehand, so we will see a divergent message if we check the status or try to do a pull. 
-We need to do a force push to push the rebase to the remote origin. 
-
-```
-$ git status
-On branch feature1
-Your branch and 'origin/feature1' have diverged,
-and have 11 and 7 different commits each, respectively.
-  (use "git pull" to merge the remote branch into yours)
-nothing to commit, working directory clean
-
-$ git push -f 
-Counting objects: 21, done.
-Delta compression using up to 8 threads.
-Compressing objects: 100% (19/19), done.
-Writing objects: 100% (21/21), 1.88 KiB | 0 bytes/s, done.
-Total 21 (delta 4), reused 0 (delta 0)
-remote: Resolving deltas: 100% (4/4), done.
-To git@github.com:danielcaldwell/test_git.git
- + 2662fee...24ad9fe feature1 -> feature1 (forced update)
-```
-
-
-Now we can check the log to see that the updates from master were applied to our feature branch: 
-
-```
-Daniels-MacBook-Pro:test_git dcaldwel$ git log --graph --oneline --all
-* 24ad9fe feature 1 update 7
-* a7862c2 feature 1 update 6
-* aafb886 feature 1 update 5
-* a1ebe17 feature 1 update 4
-* 7cefa0b feature 1 update 3
-* 6dcf05c feature 1 update 2
-* 252ec7b feature 1 update 1
-* 329a0a5 master update 9
-* c8f23ea master update 8
-* c488f9e master update 7
-* c141f08 master update 6
-* 094b41e master update 5
-* 3958b79 master update 4
-* d8cbd8e master update 3
-* 3f81757 master update 2
-* ff23269 master update 1
-* 922414d initial commit
-```
-
-if we make a change in the master, then look at the log we will see the graph again. 
-
-```
-$ git checkout master
-Switched to branch 'master'
-Your branch is up-to-date with 'origin/master'.
-
-$ echo "(master update 10)" >> master.txt; git add master.txt; git commit -m "master update 10"; git push;
-[master 31aba59] master update 10
- 1 file changed, 1 insertion(+)
-Counting objects: 3, done.
-Delta compression using up to 8 threads.
-Compressing objects: 100% (2/2), done.
-Writing objects: 100% (3/3), 283 bytes | 0 bytes/s, done.
-Total 3 (delta 1), reused 0 (delta 0)
-remote: Resolving deltas: 100% (1/1), completed with 1 local object.
-To git@github.com:danielcaldwell/test_git.git
-   329a0a5..31aba59  master -> master
-
-$ git log --graph --oneline --all
-* 31aba59 master update 10
-| * 24ad9fe feature 1 update 7
-| * a7862c2 feature 1 update 6
-| * aafb886 feature 1 update 5
-| * a1ebe17 feature 1 update 4
-| * 7cefa0b feature 1 update 3
-| * 6dcf05c feature 1 update 2
-| * 252ec7b feature 1 update 1
-|/  
-* 329a0a5 master update 9
-* c8f23ea master update 8
-* c488f9e master update 7
-* c141f08 master update 6
-* 094b41e master update 5
-* 3958b79 master update 4
-* d8cbd8e master update 3
-* 3f81757 master update 2
-* ff23269 master update 1
-* 922414d initial commit
-```
-
-This is one way to get changes from your master branch into your feature branch. It has the benefit 
-of allowing you to squash your changes at the end. Rather than having intermingled merges and changes between them. 
-
 ## Bring feature branches changes into master
 
 Once you have done a rebase you have brought all of the master commits into the feature branch. Putting the feature branch's 
@@ -399,10 +384,47 @@ git merge feature1
 git push
 ```
 
+# Cleanup and Deleting unneeded branches
 
+After your feature branch has been merged to the master branch, you may no longer need them. So, you can delete it. This is how you 
+delete it on your local repository and remote repository. 
+
+
+## Delete the local branch
+```
+git branch -D <branch name>
+```
+
+## Delete the remote branch
+```
+git push --delete origin <branch name>
+```
 
 
 # Troubleshooting
+
+## Deleting the branch when it has been deleted on the remote
+
+This can occur when you create a pull request on Github or Gitlab and choose to delete the branch from there. If you subsequently try to delete the branch
+from the remote, it will throw an error. But it will still appear in your branch list. So you can use *git fetch --prune* to remove those. 
+
+```
+$ git branch -a
+* feature2
+  master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/feature1
+  remotes/origin/feature2
+  remotes/origin/master
+Daniels-MacBook-Pro:test_git dcaldwel$ git fetch --prune
+From github.com:danielcaldwell/test_git
+ x [deleted]         (none)     -> origin/feature1
+Daniels-MacBook-Pro:test_git dcaldwel$ git branch -a
+* feature2
+  master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/master
+```
 
 ## How do I delete all of my commits including the very first commit. 
 
